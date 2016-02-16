@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.bar {
+  fill: steelblue;
+}
+
+.bar:hover {
+  fill: orangered ;
+}
+
+.tooltip {
+background: #333;
+    background: rgba(0,0,0,.8);
+    border-radius: 5px;
+    bottom: 26px;
+    color: #fff;
+    left: 20%;
+    padding: 5px 15px;
+    z-index: 98;
+    width: 580px;}
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+
+.axis {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+</style>
+
+<script src="jquery.js"></script>
+<script src="d3.v3.js"></script>
+<script src="HashMap.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+<head>
+	<title>Intention Trend</title>
+</head>
+
+<body id="body">
+
+<center><h1>Singular and Social Intention Trend Analysis</h1></center>
+<table>
+	<tr>
+		<td><b>User ID</b></td>
+		<td></td>
+		<td><select id="user_list" name="user_list" onchange="generateGraph()" onmouseover="showTip(1)"></select></td>
+		<td><div class="tooltip" style="display: none;" id="div1">Changing user will have a cascading effect on all the graphs and text descriptions.</div></td>
+	</tr>
+</table>
+<br/>
+<figure>
+<svg id="svg1"></svg>
+<figcaption> Fig.1 - Intention trend for each user.</figcaption>
+</figure>
+<br/>
+<ul>
+<b><li id="reason"></li></b>
+<li>This histogram indicates the target intention for each User.</li>
+<li>This information can be used as a first layer of filtering content for personalization</li>
+</ul>
+
+<br/>
+<hr>
+
+
+<table>
+	<tr>
+		<td><b>Intention</b></td>
+		<td></td>
+		<td><select id="intention" onchange="generateSocialGraph()" onmouseover="showTip(2)">
+			<option>KS</option>
+			<option>ML</option>
+			<option>NA</option>
+			<option>PS</option>
+			</select>
+		</td>
+		<td><div class="tooltip" style="display: none;" id="div2">Changing intention will have an effect on the graph and text descriptions.</div></td>
+	</tr>
+</table>
+<br/>
+
+
+<figure>
+<svg id="svg2"></svg>
+<figcaption> Fig.2 - Collective comparison of Intention trend for each User.</figcaption>
+</figure>
+<br/>
+<ul>
+<b><li id="socialReason"></li></b>
+<li>Social comparison of intention can help in deciding percentage of requested domains.</li>
+<li>This information helps in enhancing personalization with better content storage.</li>
+</ul>
+
+<br/>
+
+<hr>
+
+<figure>
+<svg id="svg3"></svg>
+<figcaption>Fig.3 - Keyword based Query trend for each User.</figcaption>
+</figure>
+<br/>
+
+<ul>
+<b><li id="para3"></li></b>
+<li>One of the most important steps in building a better User profile is understanding the Users' requirements.</li>
+<li>This histogram will help better understand Users' needs and filter/suggest contents more efficiently.</li>
+</ul>
+<br/>
+<hr>
+<br/>
+<table>
+	<tr>
+		<td><b>Keyword</b></td>
+		<td><select id="keyword" onchange="generateWordSocialGraph()" onmouseover="showTip(3)"></select></td>
+		<td><div class="tooltip" style="display: none;" id="div3">Changing intention will have an effect on the graph and text descriptions.</div></td>
+	</tr>
+</table>
+<br/>
+
+<figure>
+<svg id="svg4"></svg>
+<figcaption>Fig.4 - Social comparison of Keyword search trend for each User.</figcaption>
+</figure>
+<br/>
+<ul>
+<b><li id="socialWordReason"></li></b>
+<li>This information servers as a second layer of content requirement for each User.</li>
+<li>Popular keyword searches help is enhancing the quality of content.</li>
+</ul>
+<br/>
+
+<hr>
+<hr>
+
+<h1>Functional purpose of analysis</h1>
+
+<p> Personalization begins with efficient and comprehensive understanding of Users' requirements. This understanding is stored and represented as User Profiles. One of the main goals 
+of User Profiles is to enhance quality of content being presented to the Users. Hence the first step in User Profile building is to understand and record user search queries through 
+broad categorization of intentions and narrow categorization of keywords.</p>
+<p> Once we have this information, we can make further analysis through social comparisons. This will open up the field for various implications such as learning models and relative trend analysis. We can show
+collective search oriented processed data for collaboration among peers.</p> 
+<br/> 
+
+<hr>
+<h1>Steps taken</h1>
+<ol>
+<li>Load class_query.csv using d3.csv</li>
+<li>After reading the data rows, process them to get distinct list of users</li>
+<li>Initialize a HashMap to hold the Intention count for user selected</li>
+<li>Iterate through rows to construct the Intention-count map</li>
+<li>Use this data to build the User Intention graph shown in Fig.1</li>
+<li>Use similar iterative and map construction cycles to create data for subsequent graphs.</li>
+
+</ol>
+<br/>
+</body>
+<script>
+
+function showTip(num) { 
+	if(num==1) {
+		var $div = $("#div1");
+	} 
+	if(num==2)	{
+		var $div = $("#div2");
+	}
+	
+	if(num==3)	{
+		var $div = $("#div3");
+	}
+    
+    if ($div.is(":visible")) { return; }
+    $div.show();
+    setTimeout(function() {
+        $div.hide();
+    }, 3000);
+}
+
+var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .offset([-10, 0])
+  .html(function(d) {
+    return "<strong>Frequency:</strong> <span style='color:red'>" + d[1] + "</span>";
+  })
+    
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var x = d3.scale.ordinal()
+    .rangeRoundBands([0, width], .1);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .ticks(20);
+	
+var userDropDown = d3.select("#user_list");
+
+var svg = d3.select("#svg1")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g").attr("id","domainGraph")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+svg.call(tip);
+			
+var svg2 = d3.select("#svg2")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g").attr("id","socialGraph")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+			
+var svg3 = d3.select("#svg3")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g").attr("id","wordGraph")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+			
+var svg4 = d3.select("#svg4")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g").attr("id","socialWordGraph")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var dataRows;
+var data;
+var user_word_frequency_map;			
+var intent_query_map = new HashMap();
+var word_frequency_map = new HashMap();
+var wordBucket = ["java","sort", "array","merge", "method","class","string","loop","tostr","partition", "constructor","abstract","arraylist","number","cast","keyword","button"];
+var intentionList = ["KS","ML","NA","PS"];
+
+d3.csv("class_query.csv",  function(error,loadedRows) {
+  if (error) throw error;
+	
+		
+		var user_list=[];
+		for(a in intentionList) {
+			intent_query_map.put(intentionList[a],0);
+			
+		}
+		
+		for(b in wordBucket) {
+			word_frequency_map.put(wordBucket[b],0);
+			
+		}
+		
+		for(i=0;i<loadedRows.length;i++) {
+				user_list[i] = loadedRows[i].u_id;
+				var intention = loadedRows[i].intention;
+				var val1 = intent_query_map.get(intention);
+				intent_query_map.put(intention,++val1);
+				var query = loadedRows[i].query;
+				for(c in wordBucket) {
+					if(query.toLowerCase().indexOf(wordBucket[c])>-1) {
+						var cnt = word_frequency_map.get(wordBucket[c]);
+						word_frequency_map.put(wordBucket[c],++cnt);
+					}
+				}
+				
+		}
+		userDropDown;
+	  
+		userDropDown.selectAll("option")
+            .data(d3.set(user_list).values().sort())
+            .enter()
+            .append("option").text(function (d) { return d; })
+			.attr("value", function (d) { return d; });	
+			
+		d3.select("#keyword").selectAll("option")
+            .data(wordBucket)
+            .enter()
+            .append("option").text(function (d) { return d; })
+			.attr("value", function (d) { return d; });	
+		
+		dataRows = loadedRows;
+		generateGraph();	
+})
+
+function generateGraph() {
+ data = new HashMap();
+
+for(l in intentionList) {
+			
+			data.put(intentionList[l],0);
+		}
+
+var user_id = document.getElementById("user_list").value;
+
+for(i=0;i<dataRows.length;i++) {
+			var userId = dataRows[i].u_id;
+			var intention = dataRows[i].intention;
+			if(user_id==userId) {	
+				var val = data.get(intention);				
+				data.put(intention,++val);
+			}		
+	}
+
+var children = document.getElementById("domainGraph").children;
+	
+	if(children.length!=0) {
+	var p = document.getElementById("domainGraph");
+		for(i=0;i<children.length;) {
+			p.removeChild(children[i]);
+		}
+	}
+	
+  x.domain(data._dict.map(function(d) { return d[0]; }));
+  y.domain([0, d3.max(data._dict, function(d) { return d[1]; })]);
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Frequency");
+
+  svg.selectAll(".bar")
+      .data(data._dict)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d[0]); })
+      .attr("width", x.rangeBand())
+      .attr("y", function(d) { return y(d[1]); })
+      .attr("height", function(d) { return height - y(d[1]); })
+	  .on('mouseover', tip.show)
+      .on('mouseout', tip.hide);
+
+	 
+	
+	d3.select("#reason").text(function() {
+		return "User "+ user_id + " visits the site mainly for " + data.key(d3.max(data.values()));
+	});
+	
+	generateSocialGraph();
+	generateUserWordGraph();
+}
+
+function generateSocialGraph() {
+	var user_id = document.getElementById("user_list").value;
+	var intent = document.getElementById("intention").value;
+	var data1 = new HashMap();
+	data1.put(user_id,data.get(intent));
+	data1.put("Rest Of Users",intent_query_map.get(intent)-data.get(intent));
+	
+	var children = document.getElementById("socialGraph").children;
+	
+	if(children.length!=0) {
+	var p = document.getElementById("socialGraph");
+		for(i=0;i<children.length;) {
+			p.removeChild(children[i]);
+		}
+	}
+	
+	x.domain(data1._dict.map(function(d) { return d[0]; }));
+	y.domain([0, d3.max(data1._dict, function(d) { return d[1]; })]);
+
+  svg2.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg2.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Frequency");
+
+  svg2.selectAll(".bar")
+      .data(data1._dict)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d[0]); })
+      .attr("width", x.rangeBand())
+      .attr("y", function(d) { return y(d[1]); })
+      .attr("height", function(d) { return height - y(d[1]); })
+	  .on('mouseover', tip.show)
+      .on('mouseout', tip.hide);
+	  
+	  d3.select("#socialReason").text(function() {
+		return "User " + user_id + " has made " + data.get(intent) + " out of " + intent_query_map.get(intent) + " requests for " + intent;
+		});
+}
+
+function generateUserWordGraph() {
+
+	var user_id = document.getElementById("user_list").value;
+	user_word_frequency_map = new HashMap();
+
+	for(l in wordBucket) {	
+		user_word_frequency_map.put(wordBucket[l],0);
+	}
+
+	for(i=0;i<dataRows.length;i++) {
+			var userId = dataRows[i].u_id;
+			if(user_id==userId ) {	
+					var query = dataRows[i].query;
+					for(w in wordBucket) {
+						if(query.toLowerCase().indexOf(wordBucket[w])>-1) {
+							var val = user_word_frequency_map.get(wordBucket[w]);
+							user_word_frequency_map.put(wordBucket[w],++val);
+						}
+					}	
+			}
+	}
+	
+		var children = document.getElementById("wordGraph").children;
+
+	if(children.length!=0) {
+	var p = document.getElementById("wordGraph");
+		for(i=0;i<children.length;) {
+			p.removeChild(children[i]);
+		}
+	}
+  x.domain(user_word_frequency_map._dict.map(function(d) { return d[0]; }));
+  y.domain([0, d3.max(user_word_frequency_map._dict, function(d) { return d[1]; })]);
+
+  svg3.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg3.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Frequency");
+
+  svg3.selectAll(".bar")
+      .data(user_word_frequency_map._dict)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d[0]); })
+      .attr("width", x.rangeBand())
+      .attr("y", function(d) { return y(d[1]); })
+      .attr("height", function(d) { return height - y(d[1]); })
+	  .on('mouseover', tip.show)
+      .on('mouseout', tip.hide);
+
+	d3.select("#para3").text(function() {
+		return "User " + user_id + " searches keyword " + user_word_frequency_map.key(d3.max(user_word_frequency_map.values())) + " with highest frequency.";
+		});
+		
+		generateWordSocialGraph();
+
+}
+
+function generateWordSocialGraph() {
+
+
+	var user_id = document.getElementById("user_list").value;
+	var keyword = document.getElementById("keyword").value;
+	var data2 = new HashMap();
+	data2.put(user_id,user_word_frequency_map.get(keyword));
+	data2.put("Rest Of Users",word_frequency_map.get(keyword)-user_word_frequency_map.get(keyword));
+	
+	var children = document.getElementById("socialWordGraph").children;
+	
+	if(children.length!=0) {
+	var p = document.getElementById("socialWordGraph");
+		for(i=0;i<children.length;) {
+			p.removeChild(children[i]);
+		}
+	}
+	
+	x.domain(data2._dict.map(function(d) { return d[0]; }));
+	y.domain([0, d3.max(data2._dict, function(d) { return d[1]; })]);
+
+  svg4.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg4.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+    .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .text("Frequency");
+
+  svg4.selectAll(".bar")
+      .data(data2._dict)
+    .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(d[0]); })
+      .attr("width", x.rangeBand())
+      .attr("y", function(d) { return y(d[1]); })
+      .attr("height", function(d) { return height - y(d[1]); })
+	  .on('mouseover', tip.show)
+      .on('mouseout', tip.hide);
+	  
+	  d3.select("#socialWordReason").text(function() {
+		return "User " + user_id + " has made " + user_word_frequency_map.get(keyword) + " out of " + word_frequency_map.get(keyword) + " queries with keyword " + keyword;
+		});
+}
+
+
+</script>
